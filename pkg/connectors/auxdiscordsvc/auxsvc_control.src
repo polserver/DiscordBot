@@ -1,0 +1,87 @@
+use uo;
+use os;
+
+include ":accounts:accounts";
+
+function _IfOr(a,b)
+   if (a != error && a != 0) return a; endif
+   return b;
+endfunction
+
+program auxtest( connection )
+   print("Starting Discord AUX Service");
+   Set_Script_Option(SCRIPTOPT_AUXSVC_ASSUME_STRING, 1);
+   // connection.transmit("Connected to shard.");
+	SetGlobalProperty("aux_service_pid", GetPid());
+
+	var ev;
+	while (connection)
+      var aux_pid := GetGlobalProperty("aux_service");
+		if (aux_pid != GetPid())
+			SetGlobalProperty("aux_service", GetPid());
+		endif
+
+		ev := wait_for_event( 20 );
+		// print(ev);
+		if (ev) 
+         if (ev.type == 0x5) connection.transmit(packJSON(ev));
+         elseif (ev.type == 0x2) return;
+         else HandleDiscordRequests(connection, ev); endif
+		endif
+      sleepms(10);
+	endwhile
+	
+	print( "Discord Aux connection closed" );
+endprogram
+
+function HandleDiscordRequests(connection, ev)
+   var unpacked_js := UnpackJSON(ev.value);
+   if (unpacked_js.password != "NllB0t@cc3ss") return; endif
+
+   if (unpacked_js.request == "PlayersOnline")
+      var prepare_to_transmit := packJSON(struct{ key := "Response", value := "Number of players online: {}".format(EnumerateOnlineCharacters().size()), id := unpacked_js.id });
+      connection.transmit(prepare_to_transmit);
+   elseif (unpacked_js.request == "WhosOnline")
+      var users := EnumerateOnlineCharacters();
+      var users_name := array{};
+      foreach user in users
+         users_name.append(user.getName());
+         sleepms(10);
+      endforeach
+      var prepare_to_transmit := packJSON(struct{ key := "Response", value := "Online Players List: {} / {}".format(users.size(), ", ".join(users_name)), id := unpacked_js.id });
+      connection.transmit(prepare_to_transmit);
+      
+   elseif (unpacked_js.request == "RegisterAccount")
+      var result := CreateNewAccount(unpacked_js.username, unpacked_js.password, 0, "ML", _ifOr(unpacked_js.email, ""));
+      var prepare_to_transmit := packJSON(struct{ key := "Response", value := unpacked_js.username, id := unpacked_js.id });
+      if ( result.errortext )
+         prepare_to_transmit := packJSON(struct{ key := "Response", value := "Error: {}".format(result.errortext), id := unpacked_js.id });
+      else
+         prepare_to_transmit := packJSON(struct{ key := "RegisterAccount", account := unpacked_js.username, password := unpacked_js.password, email := _ifOr(unpacked_js.email, ""), id := unpacked_js.id });
+      endif
+
+      connection.transmit(prepare_to_transmit);
+   elseif (unpacked_js.request == "Shutdown")
+      Print("Shutdown received from Discord!");
+      Print(start_script(":worldsaver:commands/admin/shutdown", array{0, _ifOr(cstr(unpacked_js.time), "0")}));
+   elseif (unpacked_js.request == "Rescue")
+      Print(start_script(":commands:scripts/rescuePlayer", struct{"mobile":=cstr(unpacked_js.mobile)}));
+   elseif (unpacked_js.request == "Jail")
+      Print(start_script(":commands:scripts/jailPlayer", struct{"mobile":=cstr(unpacked_js.mobile)}));
+   elseif (unpacked_js.request == "Kick")
+      Print(start_script(":commands:scripts/kickPlayer", struct{"mobile":=cstr(unpacked_js.mobile)}));
+   elseif (unpacked_js.request == "BanAccount")
+      Print(start_script(":commands:scripts/banAccount", struct{"mobile":=cstr(unpacked_js.account)}));
+   elseif (unpacked_js.request == "BanPlayer")
+      Print(start_script(":commands:scripts/banPlayer", struct{"mobile":=cstr(unpacked_js.mobile)}));
+   elseif (unpacked_js.request == "Unloadall")
+      Print("Unload received from Discord!");
+      print(Unload_Scripts(""));
+		UnloadConfigFile(":*:npcdesc");
+		UnloadConfigFile("::npcdesc");
+		UnloadConfigFile(":*:itemdesc");
+		UnloadConfigFile(":charactercreation:caracteristicas");
+		UnloadConfigFile(":charactercreation:habilidades");
+		UnloadConfigFile(":timedScripts:timedScripts");
+   endif
+endfunction

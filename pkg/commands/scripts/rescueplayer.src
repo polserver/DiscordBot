@@ -1,0 +1,41 @@
+use uo;
+use os;
+
+program RescuePlayer( params )
+
+	var mobile := params.mobile;
+
+	if( !mobile.isa(POLCLASS_MOBILE) )
+		ForEach player in ( EnumerateOnlineCharacters() )
+			if( player.name == "mobile" )
+				mobile := player;
+				break;
+			endif
+		endforeach
+	endif
+	var oldloc := struct{"x","y","z","r"};
+	var minutes := 3;
+	var i;
+	oldloc.x := mobile.x;
+	oldloc.y := mobile.y;
+	oldloc.z := mobile.z;
+	oldloc.r := mobile.realm;
+	SendSysMessage(mobile, "You are about to be transported to safety please do not move.");
+	for (i := 1; i < minutes; i+= 1)
+		if ( mobile.x != oldloc.x || mobile.y != oldloc.y || mobile.z != oldloc.z || mobile.realm != oldloc.r)
+			SendSysMessage(mobile, "You've moved. You must stay still to be transported.");
+			return 0;
+		endif
+		SendSysMessage(mobile, "Transporting in "+minutes*60+" seconds.");
+		sleep(minutes);
+	endfor
+
+	if ( mobile.x != oldloc.x || mobile.y != oldloc.y || mobile.z != oldloc.z || mobile.realm != oldloc.r)
+		SendSysMessage(mobile, "You've moved. You must stay still to be transported.");
+		return 0;
+	endif
+	SendSysMessage(mobile, "You are about to be transported to safety please do not move.");
+
+
+    MoveObjectToLocation(mobile, 1415, 1625, 22, "britannia", MOVEOBJECT_FORCELOCATION);
+endprogram

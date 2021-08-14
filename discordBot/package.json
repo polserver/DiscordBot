@@ -1,0 +1,26 @@
+{
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Vitor Lima",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^11.4.2",
+    "discordie": "^0.11.0",
+    "is-reachable": "^2.3.3",
+    "os-utils": "0.0.14",
+    "tago": "^6.5.1"
+  },
+  "devDependencies": {
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb": "14.1.0",
+    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-jasmine": "2.2.0",
+    "eslint-plugin-jsx-a11y": "4.0.0",
+    "eslint-plugin-react": "6.10.3"
+  }
+}
